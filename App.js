@@ -1,14 +1,103 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, TextInput } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  TextInput,
+  ScrollView,
+  Alert,
+} from 'react-native';
+import { Fontisto } from '@expo/vector-icons';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme } from './colors';
+
+const STORAGE_KEY = "@toDos"
+const WORK_STORAGE_KEY = "@work"
 
 export default function App() {
   const [working, setWorking] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [text, setText] = useState("");
-  const travel = () => setWorking(false);
-  const work = () => setWorking(true);
+  const [toDos, setToDos] = useState({});
+  
+  useEffect(() => {
+    setLoading(true);
+    loadToDos();
+    async function loadWorking() {
+      try {
+        const s = await AsyncStorage.getItem(WORK_STORAGE_KEY);
+        setWorking(JSON.parse(s));
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    loadWorking();
+  }, []);
+
+  const travel = async () => {
+    setWorking(false);
+    try {
+      await AsyncStorage.setItem(WORK_STORAGE_KEY, JSON.stringify(!working));
+      const s = await AsyncStorage.getItem(WORK_STORAGE_KEY);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+  const work = async () => {
+    setWorking(true);
+    try {
+      await AsyncStorage.setItem(WORK_STORAGE_KEY, JSON.stringify(!working));
+      const s = await AsyncStorage.getItem(WORK_STORAGE_KEY);
+    } catch (e) {
+      console.log(e);
+    }
+  }
   const onChangeText = (payload) => setText(payload);
+  const saveToDos = async (toSave) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    } catch (e) {
+      console.log(e);
+    }
+  };
+  const loadToDos = async () => {
+    const s = await AsyncStorage.getItem(STORAGE_KEY);
+    setToDos(JSON.parse(s));
+    setLoading(false);
+  };
+  const addToDo = async () => {
+    if(text === "") {
+      return
+    }
+    const newToDo = {
+      ...toDos,
+      [Date.now()]: {text, working}
+    };
+    setToDos(newToDo);
+    await saveToDos(newToDo);
+    setText("");
+  };
+  const deleteToDo = async (key) => {
+    Alert.alert(
+      "Delete ToDo",
+      "Are you sure?", [
+        {text:"Cancel"},
+        {
+          text:"I'm sure", 
+          onPress: () => {
+            const newToDo = {...toDos};
+            delete newToDo[key];
+            setToDos(newToDo);
+            saveToDos(newToDo);
+          },
+        },
+    ]);
+    return;
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
@@ -22,10 +111,36 @@ export default function App() {
       </View>
       <TextInput
         onChangeText={onChangeText}
+        onSubmitEditing={addToDo}
+        returnKeyType="done"
         value={text}
         placeholder={working ? "Add a To Do" : "Where do you want to go?"}
         style={styles.input}
       />
+      {
+        loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator
+              color="white"
+              size="large"
+              style={{marginBottom: 100}}
+            />
+          </View>
+        ) : (
+          <ScrollView>{
+            Object.keys(toDos).map(key => (
+              toDos[key].working === working ? (
+                <View style={styles.toDo} key={key}>
+                  <Text style={styles.toDoText}>{toDos[key].text}</Text>
+                  <TouchableOpacity onPress={() => deleteToDo(key)}>
+                    <Text><Fontisto name="trash" size={18} color={theme.gray} /></Text>
+                  </TouchableOpacity>
+                </View>
+              ): null
+            ))
+          }</ScrollView>
+        )
+      }
     </View>
   );
 }
@@ -50,7 +165,28 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 30,
-    marginTop: 10,
+    marginVertical: 20,
     fontSize: 18,
   },
+  toDo: {
+    backgroundColor: theme.toDoBg,
+    marginBottom: 10,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    borderRadius: 15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  toDoText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "500",
+    marginRight: 10,
+  },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+  }
 });
