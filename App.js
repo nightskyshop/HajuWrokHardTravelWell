@@ -20,7 +20,9 @@ const WORK_STORAGE_KEY = "@work"
 export default function App() {
   const [working, setWorking] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState({key: null, tf: false});
   const [text, setText] = useState("");
+  const [updateText, setUpdateText] = useState("");
   const [toDos, setToDos] = useState({});
   
   useEffect(() => {
@@ -70,7 +72,7 @@ export default function App() {
   };
   const addToDo = async () => {
     if(text === "") {
-      return
+      return;
     }
     const newToDo = {
       ...toDos,
@@ -97,6 +99,18 @@ export default function App() {
     ]);
     return;
   };
+  const focusUpdateToDo = (key) => {
+    setUpdating({ key, tf: true});
+  };
+  const updateTodo = (key) => {
+    setUpdateText("");
+    setUpdating({key: null, tf: false});
+    const newToDo = {...toDos};
+    newToDo[key].text = updateText;
+    setToDos(newToDo);
+    saveToDos(newToDo);
+  }
+  const onChangeUpdateText = (payload) => setUpdateText(payload);
 
   return (
     <View style={styles.container}>
@@ -131,7 +145,21 @@ export default function App() {
             Object.keys(toDos).map(key => (
               toDos[key].working === working ? (
                 <View style={styles.toDo} key={key}>
-                  <Text style={styles.toDoText}>{toDos[key].text}</Text>
+                  <TouchableOpacity onPress={() => focusUpdateToDo(key)}>
+                    { updating.tf === true && updating.key === key ? (
+                      <TextInput
+                        autoFocus={true}
+                        returnKeyType="done"
+                        value={updateText}
+                        placeholder={toDos[key].text}
+                        style={styles.update}
+                        onChangeText={onChangeUpdateText}
+                        onBlur={() => updateTodo(key)}
+                      />
+                    ) : (
+                      <Text style={styles.toDoText}>{toDos[key].text}</Text>
+                    ) }
+                  </TouchableOpacity>
                   <TouchableOpacity onPress={() => deleteToDo(key)}>
                     <Text><Fontisto name="trash" size={18} color={theme.gray} /></Text>
                   </TouchableOpacity>
@@ -188,5 +216,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flex: 1,
+  },
+  update: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "500",
+    marginRight: 10
   }
 });
