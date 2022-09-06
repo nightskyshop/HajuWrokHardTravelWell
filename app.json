@@ -1,7 +1,9 @@
 {
   "expo": {
-    "name": "HajuWorkHardTravelWell",
-    "slug": "HajuWorkHardTravelWell",
+    "name": "Work Hard Travel Well",
+    "slug": "WorkHardTravelWell",
+    "privacy": "public",
+    "description": "An application to make you Work Hard and Travel Well",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

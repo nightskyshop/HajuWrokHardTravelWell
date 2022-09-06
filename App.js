@@ -9,6 +9,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import { Fontisto } from '@expo/vector-icons';
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -31,7 +32,9 @@ export default function App() {
     async function loadWorking() {
       try {
         const s = await AsyncStorage.getItem(WORK_STORAGE_KEY);
-        setWorking(JSON.parse(s));
+        if (s) {
+          setWorking(JSON.parse(s));
+        }
       } catch (e) {
         console.log(e);
       }
@@ -67,7 +70,9 @@ export default function App() {
   };
   const loadToDos = async () => {
     const s = await AsyncStorage.getItem(STORAGE_KEY);
-    setToDos(JSON.parse(s));
+    if (s) {
+      setToDos(JSON.parse(s));
+    }
     setLoading(false);
   };
   const addToDo = async () => {
@@ -83,21 +88,30 @@ export default function App() {
     setText("");
   };
   const deleteToDo = async (key) => {
-    Alert.alert(
-      "Delete ToDo",
-      "Are you sure?", [
-        {text:"Cancel"},
-        {
-          text:"I'm sure", 
-          onPress: () => {
-            const newToDo = {...toDos};
-            delete newToDo[key];
-            setToDos(newToDo);
-            saveToDos(newToDo);
+    if(Platform.OS === "web") {
+      const ok = confirm("Do you want to delete this To Do?");
+      if (ok) {
+        const newToDo = {...toDos};
+        delete newToDo[key];
+        setToDos(newToDo);
+        saveToDos(newToDo);
+      }
+    } else {
+      Alert.alert(
+        "Delete ToDo",
+        "Are you sure?", [
+          {text:"Cancel"},
+          {
+            text:"I'm sure", 
+            onPress: () => {
+              const newToDo = {...toDos};
+              delete newToDo[key];
+              setToDos(newToDo);
+              saveToDos(newToDo);
+            },
           },
-        },
-    ]);
-    return;
+      ]);
+    }
   };
   const focusUpdateToDo = (key) => {
     setUpdating({ key, tf: true});
@@ -117,10 +131,16 @@ export default function App() {
       <StatusBar style="light" />
       <View style={styles.header}>
         <TouchableOpacity onPress={work}>
-          <Text style={{...styles.btnText, color: working ? theme.white : theme.gray }}>Work</Text>
+          <Text style={{
+            fontSize: 38,
+            fontWeight: "600",
+            color: working ? theme.white : theme.gray }}>Work</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={travel}>
-          <Text style={{...styles.btnText, color: working ? theme.gray : theme.white }}>Travel</Text>
+        <Text style={{
+            fontSize: 38,
+            fontWeight: "600",
+            color: working ? theme.gray : theme.white }}>Travel</Text>
         </TouchableOpacity>
       </View>
       <TextInput
@@ -185,8 +205,6 @@ const styles = StyleSheet.create({
     marginTop: 70
   },
   btnText: {
-    fontSize: 38,
-    fontWeight: "600",
   },
   input: {
     backgroundColor: "white",
